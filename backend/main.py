@@ -1,9 +1,185 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, Response, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from itsdangerous import URLSafeTimedSerializer, BadSignature
 
 app = FastAPI()
 
-HTML = r"""
+SECRET = "nexus-anervea-secret-2025"
+SIGNER = URLSafeTimedSerializer(SECRET)
+USERS = {"aniket": "Password@123"}
+
+def get_user(request: Request):
+    token = request.cookies.get("session")
+    if not token:
+        return None
+    try:
+        return SIGNER.loads(token, max_age=86400)
+    except BadSignature:
+        return None
+
+LOGIN_HTML = r"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NexusChat — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:#0a0a0f;
+  color:#e8e8f0;
+  font-family:'Syne',sans-serif;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.bg-grid{
+  position:fixed;inset:0;
+  background-image:linear-gradient(rgba(124,106,255,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(124,106,255,.04) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;
+}
+.glow{
+  position:fixed;
+  width:600px;height:600px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(124,106,255,.12) 0%,transparent 70%);
+  top:-200px;left:50%;transform:translateX(-50%);
+  pointer-events:none;
+}
+.card{
+  position:relative;
+  background:#111118;
+  border:1px solid #2a2a3a;
+  border-radius:24px;
+  padding:48px 40px;
+  width:100%;
+  max-width:420px;
+  box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(124,106,255,.08);
+}
+.logo-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:32px;
+}
+.logo-mark{
+  width:44px;height:44px;
+  border-radius:12px;
+  background:linear-gradient(135deg,#7c6aff,#ff6a9e);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:800;color:#fff;
+}
+.logo-text{
+  font-size:24px;font-weight:800;letter-spacing:-.5px;
+  background:linear-gradient(90deg,#7c6aff,#ff6a9e);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.tagline{
+  font-size:13px;
+  color:#7070a0;
+  font-family:'DM Mono',monospace;
+  font-weight:300;
+  margin-bottom:32px;
+  padding-bottom:32px;
+  border-bottom:1px solid #2a2a3a;
+}
+.field-label{
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#7070a0;
+  margin-bottom:8px;
+  display:block;
+}
+.field{
+  width:100%;
+  background:#18181f;
+  border:1px solid #2a2a3a;
+  border-radius:12px;
+  padding:12px 16px;
+  color:#e8e8f0;
+  font-family:'Syne',sans-serif;
+  font-size:14px;
+  outline:none;
+  transition:border-color .2s,box-shadow .2s;
+  margin-bottom:20px;
+}
+.field:focus{
+  border-color:#7c6aff;
+  box-shadow:0 0 0 3px rgba(124,106,255,.12);
+}
+.field::placeholder{color:#3a3a5a}
+.btn{
+  width:100%;
+  background:linear-gradient(135deg,#7c6aff,#ff6a9e);
+  border:none;
+  border-radius:12px;
+  padding:14px;
+  color:#fff;
+  font-family:'Syne',sans-serif;
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+  transition:all .2s;
+  box-shadow:0 4px 20px rgba(124,106,255,.3);
+  margin-top:4px;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(124,106,255,.4)}
+.btn:active{transform:translateY(0)}
+.error{
+  background:rgba(255,106,158,.08);
+  border:1px solid rgba(255,106,158,.25);
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:13px;
+  color:#ff6a9e;
+  margin-bottom:20px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.footer{
+  text-align:center;
+  margin-top:28px;
+  font-size:11px;
+  color:#3a3a5a;
+  font-family:'DM Mono',monospace;
+}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="glow"></div>
+<div class="card">
+  <div class="logo-row">
+    <div class="logo-mark">N</div>
+    <span class="logo-text">NexusChat</span>
+  </div>
+  <p class="tagline">Powered by Anervea AI · Sign in to continue</p>
+  ERROR_PLACEHOLDER
+  <form method="post" action="/login">
+    <label class="field-label" for="username">Username</label>
+    <input class="field" id="username" name="username" type="text"
+           placeholder="Enter your username" autocomplete="username" required/>
+    <label class="field-label" for="password">Password</label>
+    <input class="field" id="password" name="password" type="password"
+           placeholder="Enter your password" autocomplete="current-password" required/>
+    <button class="btn" type="submit">Sign In →</button>
+  </form>
+  <p class="footer">NexusChat · Anervea AI © 2025</p>
+</div>
+</body>
+</html>
+"""
+
+CHAT_HTML = r"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,10 +200,7 @@ HTML = r"""
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-
 .shell{display:flex;height:100vh;width:100vw;overflow:hidden}
-
-/* SIDEBAR */
 .sidebar{width:260px;min-width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0 16px;transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:100}
 .sb-head{display:flex;align-items:center;gap:10px;padding:0 20px 24px;border-bottom:1px solid var(--border)}
 .logo-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0}
@@ -37,15 +210,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .nav-btn:hover{background:var(--surface2);color:var(--text)}
 .nav-btn.active{color:var(--accent);background:rgba(124,106,255,.08)}
 .nav-icon{font-size:16px}
-.sb-foot{padding:16px 20px 0;border-top:1px solid var(--border);font-size:12px;color:var(--text-dimmer);font-family:var(--mono)}
-.sb-foot strong{color:var(--accent)}
-
+.sb-user{padding:12px 20px 0;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.user-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:10px;color:var(--text-dimmer);font-family:var(--mono)}
+.logout-btn{display:flex;align-items:center;gap:8px;background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font);font-size:12px;font-weight:500;padding:7px 12px;border-radius:var(--rs);cursor:pointer;transition:all .2s;width:100%;margin-top:4px}
+.logout-btn:hover{border-color:var(--accent2);color:var(--accent2)}
 .overlay{display:none;position:fixed;inset:0;background:#0009;z-index:90;backdrop-filter:blur(2px)}
-
-/* MAIN */
 .main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
-
-/* HEADER */
 .hdr{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface);z-index:10}
 .menu-btn{display:none;flex-direction:column;gap:4px;background:none;border:none;cursor:pointer;padding:4px}
 .menu-btn span{display:block;width:20px;height:2px;background:var(--text-dim);border-radius:2px}
@@ -56,12 +230,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .bot-status{font-size:11px;color:var(--accent3);font-family:var(--mono);font-weight:300}
 .clr-btn{background:none;border:1px solid var(--border);color:var(--text-dim);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:13px;transition:all .2s}
 .clr-btn:hover{color:var(--accent2);border-color:var(--accent2)}
-
-/* MESSAGES */
 .msgs{flex:1;overflow-y:auto;padding:24px 0}
 .msgs-inner{max-width:760px;margin:0 auto;padding:0 20px;display:flex;flex-direction:column;gap:16px}
-
-/* MESSAGE ROW */
 .msg-row{display:flex;align-items:flex-end;gap:10px;animation:fadeUp .3s ease both}
 .msg-row.user{flex-direction:row-reverse}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -76,20 +246,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .bubble code{font-family:var(--mono);font-size:12px;background:rgba(124,106,255,.1);padding:2px 6px;border-radius:4px;color:var(--accent3)}
 .msg-time{font-size:10px;color:var(--text-dimmer);font-family:var(--mono);padding:0 4px}
 .msg-time.r{text-align:right}
-
-/* TYPING */
 .typing-row{display:flex;align-items:flex-end;gap:10px;animation:fadeUp .2s ease both}
 .typing-bubble{background:var(--bot-bubble);border:1px solid var(--border);border-radius:var(--r);border-bottom-left-radius:4px;padding:14px 18px;display:flex;gap:5px;align-items:center}
 .dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:bounce 1.2s infinite ease-in-out}
 .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
 @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
-
-/* SUGGESTIONS */
 .suggestions{display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 16px;max-width:760px;margin:0 auto;width:100%}
 .chip{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-family:var(--font);font-size:12px;font-weight:500;padding:7px 14px;border-radius:50px;cursor:pointer;transition:all .2s}
 .chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(124,106,255,.06)}
-
-/* INPUT */
 .input-area{padding:16px 20px 20px;border-top:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;align-items:center;gap:6px}
 .input-box{display:flex;align-items:flex-end;gap:10px;width:100%;max-width:760px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 10px 10px 16px;transition:border-color .2s}
 .input-box:focus-within{border-color:var(--accent)}
@@ -100,7 +264,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .send-btn.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 16px rgba(124,106,255,.35)}
 .send-btn.on:hover{transform:scale(1.07)}
 .hint{font-size:11px;color:var(--text-dimmer);font-family:var(--mono);font-weight:300}
-
 @media(max-width:700px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0)}
@@ -120,7 +283,25 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
       <button class="nav-btn active"><span class="nav-icon">💬</span>Chat</button>
       <button class="nav-btn" onclick="clearChat()"><span class="nav-icon">🗑</span>Clear Chat</button>
     </nav>
-    <div class="sb-foot">Powered by <strong>Anervea AI</strong></div>
+    <div class="sb-user">
+      <div class="user-row">
+        <div class="user-av" id="user-av">A</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">aniket</div>
+          <div class="user-role">Anervea AI</div>
+        </div>
+      </div>
+      <form method="post" action="/logout">
+        <button class="logout-btn" type="submit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Sign Out
+        </button>
+      </form>
+    </div>
   </aside>
   <div class="overlay" id="ov" onclick="closeSb()"></div>
   <main class="main">
@@ -157,122 +338,107 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   </main>
 </div>
 <script>
-const SUGGESTIONS = [
-  'What can you help me with?',
-  'Tell me about Anervea AI',
-  'How does competitive intelligence work?',
-  'What is AlfaKinetic?'
-];
-const RESPONSES = {
-  anervea: "Anervea AI builds intelligent platforms that transform how organizations understand their competitive landscape.",
-  competitive: "Competitive intelligence involves gathering, analyzing, and acting on information about competitors, markets, and industry trends to drive better decisions.",
-  intelligence: "Competitive intelligence involves gathering, analyzing, and acting on information about competitors, markets, and industry trends to drive better decisions.",
-  alfakinetic: "AlfaKinetic is Anervea\u2019s flagship competitive intelligence platform \u2014 it synthesizes signals from multiple data sources into actionable insights for pharma and life sciences.",
-  alfa: "AlfaKinetic is Anervea\u2019s flagship CI platform for pharma and life sciences.",
-  help: "I\u2019m Nexus, your AI assistant powered by Anervea. I can help with competitive intelligence, research, and strategic insights.",
-  data: "I can analyze data patterns, summarize research, and provide strategic recommendations tailored to your needs.",
-  analyze: "I can analyze data patterns, summarize research, and provide strategic recommendations tailored to your needs."
-};
-const FALLBACKS = [
-  "I\u2019m Nexus, your AI assistant by Anervea. Ask me anything about markets, competitors, or industry trends.",
-  "Great question! I\u2019m here to assist around the clock. What would you like to know?",
-  "Could you clarify that a bit? I want to give you the most precise answer possible.",
-  "I can help with competitive intelligence, research summaries, and strategic insights."
-];
-
-let msgId = 0;
-let shown = false;
-
-function fmt(t){
-  return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-          .replace(/`(.*?)`/g,'<code>$1</code>');
+const UNAME = document.cookie.match(/uname=([^;]+)/);
+if(UNAME){
+  const n = decodeURIComponent(UNAME[1]);
+  const el = document.getElementById('user-name');
+  if(el) el.textContent = n;
+  const av = document.getElementById('user-av');
+  if(av) av.textContent = n.charAt(0).toUpperCase();
 }
-function ts(){
-  return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-}
-function addMsg(role, text){
-  const isUser = role === 'user';
-  const id = ++msgId;
-  const row = document.createElement('div');
-  row.className = 'msg-row ' + (isUser ? 'user' : 'bot');
-  row.id = 'msg-' + id;
-  row.innerHTML = `
-    ${!isUser ? '<div class="av bot"><span>N</span></div>' : ''}
-    <div class="msg-content">
-      <div class="bubble ${isUser ? 'usr' : 'bot'}">${fmt(text)}</div>
-      <div class="msg-time ${isUser ? 'r' : ''}">${ts()}</div>
-    </div>
-    ${isUser ? '<div class="av usr"><span>U</span></div>' : ''}
-  `;
+const SUGGESTIONS=['What can you help me with?','Tell me about Anervea AI','How does competitive intelligence work?','What is AlfaKinetic?'];
+const RESPONSES={anervea:"Anervea AI builds intelligent platforms that transform how organizations understand their competitive landscape.",competitive:"Competitive intelligence involves gathering, analyzing, and acting on information about competitors, markets, and industry trends to drive better decisions.",intelligence:"Competitive intelligence involves gathering, analyzing, and acting on information about competitors, markets, and industry trends.",alfakinetic:"AlfaKinetic is Anervea\u2019s flagship competitive intelligence platform \u2014 it synthesizes signals from multiple data sources into actionable insights for pharma and life sciences.",alfa:"AlfaKinetic is Anervea\u2019s flagship CI platform for pharma and life sciences.",help:"I\u2019m Nexus, your AI assistant powered by Anervea. I can help with competitive intelligence, research, and strategic insights.",data:"I can analyze data patterns, summarize research, and provide strategic recommendations tailored to your needs.",analyze:"I can analyze data patterns, summarize research, and provide strategic recommendations." };
+const FALLBACKS=["I\u2019m Nexus, your AI assistant by Anervea. Ask me anything about markets, competitors, or industry trends.","Great question! I\u2019m here to assist around the clock. What would you like to know?","Could you clarify that a bit? I want to give you the most precise answer possible.","I can help with competitive intelligence, research summaries, and strategic insights."];
+let msgId=0;
+function fmt(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`(.*?)`/g,'<code>$1</code>');}
+function ts(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function addMsg(role,text){
+  const isUser=role==='user';
+  const row=document.createElement('div');
+  row.className='msg-row '+(isUser?'user':'bot');
+  row.innerHTML=`${!isUser?'<div class="av bot"><span>N</span></div>':''}<div class="msg-content"><div class="bubble ${isUser?'usr':'bot'}">${fmt(text)}</div><div class="msg-time ${isUser?'r':''}">${ts()}</div></div>${isUser?'<div class="av usr"><span>U</span></div>':''}`;
   document.getElementById('feed').appendChild(row);
   scroll();
-  hideSuggestions();
-  return id;
+  if(isUser) document.getElementById('chips').style.display='none';
 }
-function showTyping(){
-  const el = document.createElement('div');
-  el.className = 'typing-row'; el.id = 'typing';
-  el.innerHTML = '<div class="av bot"><span>N</span></div><div class="typing-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
-  document.getElementById('feed').appendChild(el);
-  scroll();
-}
-function hideTyping(){ const el=document.getElementById('typing'); if(el) el.remove(); }
-function scroll(){ const m=document.getElementById('msgs'); m.scrollTop=m.scrollHeight; }
-function hideSuggestions(){ document.getElementById('chips').style.display='none'; }
-function getBotReply(text){
-  const l = text.toLowerCase();
-  for(const [k,v] of Object.entries(RESPONSES)){ if(l.includes(k)) return v; }
-  return FALLBACKS[Math.floor(Math.random()*FALLBACKS.length)];
-}
+function showTyping(){const el=document.createElement('div');el.className='typing-row';el.id='typing';el.innerHTML='<div class="av bot"><span>N</span></div><div class="typing-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';document.getElementById('feed').appendChild(el);scroll();}
+function hideTyping(){const el=document.getElementById('typing');if(el)el.remove();}
+function scroll(){const m=document.getElementById('msgs');m.scrollTop=m.scrollHeight;}
+function getBotReply(text){const l=text.toLowerCase();for(const[k,v]of Object.entries(RESPONSES)){if(l.includes(k))return v;}return FALLBACKS[Math.floor(Math.random()*FALLBACKS.length)];}
 function send(text){
-  const inp = document.getElementById('inp');
-  const msg = (text || inp.value).trim();
-  if(!msg) return;
-  addMsg('user', msg);
-  inp.value = ''; onInput();
+  const inp=document.getElementById('inp');
+  const msg=(text||inp.value).trim();
+  if(!msg)return;
+  addMsg('user',msg);
+  inp.value='';onInput();
   showTyping();
-  const delay = 1100 + Math.random() * 900;
-  setTimeout(() => {
-    hideTyping();
-    addMsg('bot', getBotReply(msg));
-  }, delay);
+  setTimeout(()=>{hideTyping();addMsg('bot',getBotReply(msg));},1100+Math.random()*900);
   inp.focus();
 }
 function onInput(){
-  const inp = document.getElementById('inp');
-  const btn = document.getElementById('sbtn');
-  const has = inp.value.trim().length > 0;
-  btn.disabled = !has;
-  btn.className = 'send-btn' + (has ? ' on' : '');
-  inp.style.height = 'auto';
-  inp.style.height = Math.min(inp.scrollHeight, 120) + 'px';
+  const inp=document.getElementById('inp');
+  const btn=document.getElementById('sbtn');
+  const has=inp.value.trim().length>0;
+  btn.disabled=!has;
+  btn.className='send-btn'+(has?' on':'');
+  inp.style.height='auto';
+  inp.style.height=Math.min(inp.scrollHeight,120)+'px';
 }
-function onKey(e){
-  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send(); }
-}
-function clearChat(){
-  document.getElementById('feed').innerHTML = '';
-  addMsg('bot', 'Chat cleared. Start a new conversation!');
-  document.getElementById('chips').style.display = 'none';
-  closeSb();
-}
-function toggleSb(){ document.getElementById('sb').classList.toggle('open'); }
-function closeSb(){ document.getElementById('sb').classList.remove('open'); }
-
-// Init
-addMsg('bot', 'Hello! I am **Nexus**, your intelligent AI assistant by Anervea. How can I help you today?');
-const chips = document.getElementById('chips');
-SUGGESTIONS.forEach(s => {
-  const b = document.createElement('button');
-  b.className = 'chip'; b.textContent = s;
-  b.onclick = () => send(s);
-  chips.appendChild(b);
-});
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function clearChat(){document.getElementById('feed').innerHTML='';addMsg('bot','Chat cleared. Start a new conversation!');document.getElementById('chips').style.display='none';closeSb();}
+function toggleSb(){document.getElementById('sb').classList.toggle('open');}
+function closeSb(){document.getElementById('sb').classList.remove('open');}
+addMsg('bot','Hello! I am **Nexus**, your intelligent AI assistant by Anervea. How can I help you today?');
+const chips=document.getElementById('chips');
+SUGGESTIONS.forEach(s=>{const b=document.createElement('button');b.className='chip';b.textContent=s;b.onclick=()=>send(s);chips.appendChild(b);});
 </script>
 </body>
 </html>
 """
 
-@app.get('/{full_path:path}')
-async def serve(full_path: str):
-    return HTMLResponse(content=HTML)
+@app.get('/', response_class=HTMLResponse)
+async def root(request: Request):
+    user = get_user(request)
+    if not user:
+        return RedirectResponse('/login', status_code=302)
+    uname_cookie = request.cookies.get('uname', user)
+    return HTMLResponse(content=CHAT_HTML)
+
+@app.get('/login', response_class=HTMLResponse)
+async def login_get(request: Request):
+    user = get_user(request)
+    if user:
+        return RedirectResponse('/', status_code=302)
+    html = LOGIN_HTML.replace('ERROR_PLACEHOLDER', '')
+    return HTMLResponse(content=html)
+
+@app.post('/login')
+async def login_post(
+    request: Request,
+    response: Response,
+    username: str = Form(...),
+    password: str = Form(...)
+):
+    if USERS.get(username) == password:
+        token = SIGNER.dumps(username)
+        resp = RedirectResponse('/', status_code=302)
+        resp.set_cookie('session', token, httponly=True, max_age=86400, samesite='lax')
+        resp.set_cookie('uname', username, max_age=86400, samesite='lax')
+        return resp
+    error = '<div class="error"><span>⚠️</span>Invalid username or password. Please try again.</div>'
+    html = LOGIN_HTML.replace('ERROR_PLACEHOLDER', error)
+    return HTMLResponse(content=html, status_code=401)
+
+@app.post('/logout')
+async def logout():
+    resp = RedirectResponse('/login', status_code=302)
+    resp.delete_cookie('session')
+    resp.delete_cookie('uname')
+    return resp
+
+@app.get('/{full_path:path}', response_class=HTMLResponse)
+async def catch_all(request: Request, full_path: str):
+    user = get_user(request)
+    if not user:
+        return RedirectResponse('/login', status_code=302)
+    return HTMLResponse(content=CHAT_HTML)
