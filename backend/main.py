@@ -1,13 +1,10 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-import os
+from fastapi.responses import HTMLResponse
 
 app = FastAPI()
 
-# Mount static assets (pre-built React dist is committed to the repo)
-app.mount('/assets', StaticFiles(directory='dist/assets'), name='assets')
+HTML = open("standalone.html").read() if __import__("os").path.exists("standalone.html") else "<h1>Building...</h1>"
 
-@app.get('/{full_path:path}')
-async def serve_spa(full_path: str):
-    return FileResponse('dist/index.html')
+@app.get("/{full_path:path}")
+async def serve(full_path: str):
+    return HTMLResponse(content=open("standalone.html").read() if __import__("os").path.exists("standalone.html") else HTML)
