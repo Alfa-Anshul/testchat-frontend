@@ -17,23 +17,17 @@ export default function ChatMessage({ message }) {
   return (
     <div className={`message-row ${isUser ? 'user' : 'bot'}`}>
       {!isUser && (
-        <div className="avatar bot-av">
-          <span>N</span>
-        </div>
+        <div className="avatar bot-av"><span>N</span></div>
       )}
       <div className="message-content">
         <div
           className={`bubble ${isUser ? 'user-bubble' : 'bot-bubble'}`}
           dangerouslySetInnerHTML={{ __html: formatText(message.text) }}
         />
-        <div className={`msg-meta ${isUser ? 'meta-right' : ''}`}>
-          {formatTime(message.ts)}
-        </div>
+        <div className={`msg-meta ${isUser ? 'meta-right' : ''}`}>{formatTime(message.ts)}</div>
       </div>
       {isUser && (
-        <div className="avatar user-av">
-          <span>U</span>
-        </div>
+        <div className="avatar user-av"><span>U</span></div>
       )}
     </div>
   );

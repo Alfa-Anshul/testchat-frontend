@@ -6,7 +6,6 @@
   position: relative;
 }
 
-/* ---- SIDEBAR ---- */
 .sidebar {
   width: 260px;
   min-width: 260px;
@@ -99,7 +98,6 @@
   backdrop-filter: blur(2px);
 }
 
-/* ---- MAIN ---- */
 .chat-main {
   flex: 1;
   display: flex;
@@ -109,7 +107,6 @@
   position: relative;
 }
 
-/* ---- HEADER ---- */
 .chat-header {
   display: flex;
   align-items: center;
@@ -191,7 +188,6 @@
 }
 .clear-btn:hover { color: var(--accent2); border-color: var(--accent2); }
 
-/* ---- MESSAGES ---- */
 .messages-area {
   flex: 1;
   overflow-y: auto;
@@ -209,7 +205,6 @@
   gap: 16px;
 }
 
-/* ---- SUGGESTIONS ---- */
 .suggestions {
   display: flex;
   flex-wrap: wrap;
@@ -237,7 +232,6 @@
   background: rgba(124,106,255,0.06);
 }
 
-/* ---- INPUT ---- */
 .input-area {
   padding: 16px 20px 20px;
   border-top: 1px solid var(--border);
@@ -302,7 +296,6 @@
   font-weight: 300;
 }
 
-/* ---- RESPONSIVE ---- */
 @media (max-width: 700px) {
   .sidebar {
     position: fixed;

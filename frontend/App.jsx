@@ -73,7 +73,6 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <span className="logo-mark">N</span>
@@ -88,12 +87,9 @@ export default function App() {
         </div>
       </aside>
 
-      {/* Overlay */}
       {sidebarOpen && <div className="overlay" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Main */}
       <main className="chat-main">
-        {/* Header */}
         <header className="chat-header">
           <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
             <span /><span /><span />
@@ -108,7 +104,6 @@ export default function App() {
           <button className="clear-btn" onClick={clearChat} title="Clear chat">✕</button>
         </header>
 
-        {/* Messages */}
         <div className="messages-area">
           <div className="messages-inner">
             {messages.map(msg => (
@@ -119,7 +114,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Suggestions */}
         {messages.length <= 2 && (
           <div className="suggestions">
             {SUGGESTIONS.map((s, i) => (
@@ -128,7 +122,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Input */}
         <div className="input-area">
           <div className="input-box">
             <textarea
