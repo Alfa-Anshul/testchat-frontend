@@ -1,28 +1,21 @@
-from fastapi import FastAPI, Request, Response, Form
+from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from itsdangerous import URLSafeTimedSerializer, BadSignature
 
 app = FastAPI()
-
 SECRET = "nexus-anervea-secret-2025"
 SIGNER = URLSafeTimedSerializer(SECRET)
 USERS = {"aniket": "Password@123"}
 
 def get_user(request: Request):
-    token = request.cookies.get("session")
-    if not token:
-        return None
     try:
-        return SIGNER.loads(token, max_age=86400)
+        return SIGNER.loads(request.cookies.get("session",""), max_age=86400)
     except BadSignature:
         return None
 
 LOGIN_HTML = r"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>NexusChat — Login</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -41,19 +34,12 @@ body{min-height:100vh;background:#060f0a;color:#e0f0e8;font-family:'Syne',sans-s
 .field::placeholder{color:#1f4d2e}
 .btn{width:100%;background:linear-gradient(135deg,#16a34a,#22c55e);border:none;border-radius:12px;padding:14px;color:#052e16;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(34,197,94,.3);margin-top:4px}
 .btn:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(34,197,94,.45)}
-.btn:active{transform:translateY(0)}
 .error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:10px 14px;font-size:13px;color:#f87171;margin-bottom:20px;display:flex;align-items:center;gap:8px}
 .footer{text-align:center;margin-top:28px;font-size:11px;color:#1f4d2e;font-family:'DM Mono',monospace}
-</style>
-</head>
-<body>
-<div class="bg-grid"></div>
-<div class="glow"></div>
+</style></head><body>
+<div class="bg-grid"></div><div class="glow"></div>
 <div class="card">
-  <div class="logo-row">
-    <div class="logo-mark">N</div>
-    <span class="logo-text">NexusChat</span>
-  </div>
+  <div class="logo-row"><div class="logo-mark">N</div><span class="logo-text">NexusChat</span></div>
   <p class="tagline">Powered by Anervea AI · Sign in to continue</p>
   ERROR_PLACEHOLDER
   <form method="post" action="/login">
@@ -64,38 +50,17 @@ body{min-height:100vh;background:#060f0a;color:#e0f0e8;font-family:'Syne',sans-s
     <button class="btn" type="submit">Sign In →</button>
   </form>
   <p class="footer">NexusChat · Anervea AI © 2025</p>
-</div>
-</body>
-</html>
+</div></body></html>
 """
 
 CHAT_HTML = r"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>NexusChat — Anervea AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#060f0a;
-  --surface:#0d1f14;
-  --surface2:#0f2a18;
-  --border:#1a3d25;
-  --accent:#22c55e;
-  --accent2:#4ade80;
-  --accent3:#86efac;
-  --text:#e0f0e8;
-  --text-dim:#4b7a5c;
-  --text-dimmer:#1f4d2e;
-  --user-bubble:#0a2e15;
-  --bot-bubble:#0d1f14;
-  --font:'Syne',sans-serif;
-  --mono:'DM Mono',monospace;
-  --r:18px;--rs:10px;
-}
+:root{--bg:#060f0a;--surface:#0d1f14;--surface2:#0f2a18;--border:#1a3d25;--accent:#22c55e;--accent2:#4ade80;--accent3:#86efac;--text:#e0f0e8;--text-dim:#4b7a5c;--text-dimmer:#1f4d2e;--user-bubble:#0a2e15;--bot-bubble:#0d1f14;--font:'Syne',sans-serif;--mono:'DM Mono',monospace;--r:18px;--rs:10px}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 .shell{display:flex;height:100vh;width:100vw;overflow:hidden}
@@ -122,8 +87,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .menu-btn span{display:block;width:20px;height:2px;background:var(--text-dim);border-radius:2px}
 .hdr-info{flex:1;display:flex;align-items:center;gap:10px}
 .bot-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#052e16;position:relative;flex-shrink:0}
-.pulse{position:absolute;bottom:1px;right:1px;width:10px;height:10px;border-radius:50%;background:var(--accent3);border:2px solid var(--surface);animation:pulseAnim 2s infinite}
-@keyframes pulseAnim{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+.pulse{position:absolute;bottom:1px;right:1px;width:10px;height:10px;border-radius:50%;background:var(--accent3);border:2px solid var(--surface);animation:pa 2s infinite}
+@keyframes pa{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 .bot-name{font-size:15px;font-weight:700;letter-spacing:-.3px}
 .bot-status{font-size:11px;color:var(--accent2);font-family:var(--mono);font-weight:300}
 .clr-btn{background:none;border:1px solid var(--border);color:var(--text-dim);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:13px;transition:all .2s}
@@ -163,9 +128,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .send-btn.on:hover{transform:scale(1.07)}
 .hint{font-size:11px;color:var(--text-dimmer);font-family:var(--mono);font-weight:300}
 @media(max-width:700px){.sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.overlay{display:block}.menu-btn{display:flex}}
-</style>
-</head>
-<body>
+</style></head><body>
 <div class="shell">
   <aside class="sidebar" id="sb">
     <div class="sb-head"><div class="logo-mark">N</div><span class="logo-txt">Nexus</span></div>
@@ -230,47 +193,37 @@ function closeSb(){document.getElementById('sb').classList.remove('open');}
 addMsg('bot','Hello! I am **Nexus**, your intelligent AI assistant by Anervea. How can I help you today?');
 var chips=document.getElementById('chips');
 SUGG.forEach(function(s){var b=document.createElement('button');b.className='chip';b.textContent=s;b.onclick=function(){send(s);};chips.appendChild(b);});
-</script>
-</body>
-</html>
+</script></body></html>
 """
 
 @app.get('/', response_class=HTMLResponse)
 async def root(request: Request):
-    if not get_user(request):
-        return RedirectResponse('/login', status_code=302)
+    if not get_user(request): return RedirectResponse('/login', status_code=302)
     return HTMLResponse(content=CHAT_HTML)
 
 @app.get('/login', response_class=HTMLResponse)
 async def login_get(request: Request):
-    if get_user(request):
-        return RedirectResponse('/', status_code=302)
+    if get_user(request): return RedirectResponse('/', status_code=302)
     return HTMLResponse(content=LOGIN_HTML.replace('ERROR_PLACEHOLDER', ''))
 
 @app.post('/login')
-async def login_post(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...)
-):
+async def login_post(request: Request, username: str = Form(...), password: str = Form(...)):
     if USERS.get(username) == password:
         token = SIGNER.dumps(username)
         resp = RedirectResponse('/', status_code=302)
         resp.set_cookie('session', token, httponly=True, max_age=86400, samesite='lax')
         resp.set_cookie('uname', username, max_age=86400, samesite='lax')
         return resp
-    error = '<div class="error"><span>⚠️</span> Invalid username or password.</div>'
-    return HTMLResponse(content=LOGIN_HTML.replace('ERROR_PLACEHOLDER', error), status_code=401)
+    err = '<div class="error"><span>⚠️</span> Invalid username or password.</div>'
+    return HTMLResponse(content=LOGIN_HTML.replace('ERROR_PLACEHOLDER', err), status_code=401)
 
 @app.post('/logout')
 async def logout():
     resp = RedirectResponse('/login', status_code=302)
-    resp.delete_cookie('session')
-    resp.delete_cookie('uname')
+    resp.delete_cookie('session'); resp.delete_cookie('uname')
     return resp
 
 @app.get('/{full_path:path}', response_class=HTMLResponse)
 async def catch_all(request: Request, full_path: str):
-    if not get_user(request):
-        return RedirectResponse('/login', status_code=302)
+    if not get_user(request): return RedirectResponse('/login', status_code=302)
     return HTMLResponse(content=CHAT_HTML)
